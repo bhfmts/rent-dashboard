@@ -19,7 +19,8 @@ export async function GET(request: NextRequest) {
     const data = await getFilteredMovements(since, until)
     return NextResponse.json(data)
   } catch (err) {
-    console.error('Fintoc error:', err)
-    return NextResponse.json({ error: 'Error al obtener movimientos desde Fintoc' }, { status: 500 })
+    const message = err instanceof Error ? err.message : String(err)
+    console.error('Fintoc error:', message)
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
