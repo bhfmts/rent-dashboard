@@ -8,37 +8,24 @@ export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [mode, setMode] = useState<'login' | 'signup'>('login')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [message, setMessage] = useState('')
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError('')
-    setMessage('')
 
     const supabase = createClient()
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
 
-    if (mode === 'login') {
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) {
-        setError('Credenciales incorrectas. Verifica tu email y contraseña.')
-      } else {
-        router.push('/')
-        router.refresh()
-      }
+    if (error) {
+      setError('Credenciales incorrectas. Verifica tu email y contraseña.')
+      setLoading(false)
     } else {
-      const { error } = await supabase.auth.signUp({ email, password })
-      if (error) {
-        setError(error.message)
-      } else {
-        setMessage('Revisa tu email para confirmar tu cuenta.')
-      }
+      router.push('/')
+      router.refresh()
     }
-
-    setLoading(false)
   }
 
   return (
@@ -51,24 +38,7 @@ export default function LoginPage() {
         </div>
 
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-          <div className="flex gap-2 mb-6 bg-gray-800 rounded-lg p-1">
-            <button
-              onClick={() => setMode('login')}
-              className={`flex-1 py-1.5 text-sm rounded-md transition-colors font-medium ${
-                mode === 'login' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-gray-300'
-              }`}
-            >
-              Iniciar sesión
-            </button>
-            <button
-              onClick={() => setMode('signup')}
-              className={`flex-1 py-1.5 text-sm rounded-md transition-colors font-medium ${
-                mode === 'signup' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-gray-300'
-              }`}
-            >
-              Registrarse
-            </button>
-          </div>
+          <h2 className="text-sm font-medium text-gray-400 mb-5">Iniciar sesión</h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -99,18 +69,13 @@ export default function LoginPage() {
                 {error}
               </div>
             )}
-            {message && (
-              <div className="bg-green-950/50 border border-green-900 rounded-lg px-3 py-2 text-green-400 text-sm">
-                {message}
-              </div>
-            )}
 
             <button
               type="submit"
               disabled={loading}
               className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition-colors text-sm"
             >
-              {loading ? 'Cargando...' : mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
+              {loading ? 'Cargando...' : 'Iniciar sesión'}
             </button>
           </form>
         </div>
