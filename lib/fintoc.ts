@@ -10,18 +10,26 @@ const INCOME_HOLDERS = [
   'juan nicolas fernandez brand',
   'wendy chantal',
   'lilian andrea pavez salinas',
+  'pablo andres badilla cordero',
+  'maria elisa uzcategui',
 ]
 
-const EXPENSE_DESCRIPTIONS = [
-  'pago cuota credito hipotec. n° 540',
-  'pago cuota credito hipotec. n° 500',
-  'pac hip_bestado 00000110457190',
+// Simplified patterns that match both URL-encoded and plain versions after normalization
+const EXPENSE_DESCRIPTION_PATTERNS = [
+  'hipotec',        // matches "credito hipotecario" in any encoding
+  'pac hip',        // matches "pac hip_bestado"
 ]
 
+const EXPENSE_TRANSFER_PATTERN = 'traspaso a cuenta de otro banco'
+
+// Monthly fixed transfer of $35,000 (sent to pay BancoEstado mortgage from another account)
 const EXPENSE_AMOUNTS = [-35000]
 
 function normalizeText(text: string): string {
-  return text
+  // URL-decode first — Fintoc sometimes returns percent-encoded descriptions
+  let decoded = text
+  try { decoded = decodeURIComponent(text) } catch {}
+  return decoded
     .trim()
     .toLowerCase()
     .normalize('NFKD')
@@ -36,7 +44,7 @@ async function getAllMovements(): Promise<FintocMovement[]> {
   }
 
   const allMovements: FintocMovement[] = []
-  let params = new URLSearchParams({ link_token: LINK_TOKEN, per_page: '50' })
+  let params = new URLSearchParams({ link_token: LINK_TOKEN, per_page: '100' })
 
   while (true) {
     const response = await fetch(`${baseUrl}?${params}`, { headers, cache: 'no-store' })
@@ -53,10 +61,10 @@ async function getAllMovements(): Promise<FintocMovement[]> {
     if (!nextMatch) break
 
     const nextUrl = new URL(nextMatch[1])
-    const cursor = nextUrl.searchParams.get('cursor')
-    if (!cursor) break
+    const page = nextUrl.searchParams.get('page')
+    if (!page) break
 
-    params = new URLSearchParams({ link_token: LINK_TOKEN, per_page: '50', cursor })
+    params = new URLSearchParams({ link_token: LINK_TOKEN, per_page: '100', page })
   }
 
   return allMovements
@@ -82,11 +90,14 @@ export async function getFilteredMovements(since: string, until: string): Promis
     const desc = normalizeText(mov.description || '')
     const sender = normalizeText(mov.sender_account?.holder_name || '')
 
-    if (INCOME_HOLDERS.some(name => sender.includes(name))) {
+    const isIngreso = INCOME_HOLDERS.some(name => sender.includes(name) || desc.includes(name))
+    const isGasto =
+      EXPENSE_DESCRIPTION_PATTERNS.some(p => desc.includes(p)) ||
+      (mov.amount === -35000 && desc.includes(EXPENSE_TRANSFER_PATTERN))
+
+    if (isIngreso) {
       ingresos.push(mov)
-    } else if (EXPENSE_DESCRIPTIONS.some(d => desc.includes(d))) {
-      gastos.push(mov)
-    } else if (EXPENSE_AMOUNTS.includes(mov.amount)) {
+    } else if (isGasto) {
       gastos.push(mov)
     }
   }
