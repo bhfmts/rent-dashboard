@@ -16,8 +16,9 @@ const INCOME_HOLDERS = [
 
 // Simplified patterns that match both URL-encoded and plain versions after normalization
 const EXPENSE_DESCRIPTION_PATTERNS = [
-  'hipotec',        // matches "credito hipotecario" in any encoding
-  'pac hip',        // matches "pac hip_bestado"
+  'hipotec',          // matches "credito hipotecario" in any encoding
+  'pac hip',          // matches "pac hip_bestado"
+  'pac banco conso',  // matches "pac banco consorcio"
 ]
 
 const EXPENSE_TRANSFER_PATTERN = 'traspaso a cuenta de otro banco'
